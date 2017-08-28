@@ -16,10 +16,10 @@ from flask import session as login_session
 
 app = Flask(__name__)
 
+APP_PATH = '/var/www/catalog/catalog/'
 CLIENT_ID = json.loads(
-    open('client_secrets.json', 'r').read())['web']['client_id']
+    open(APP_PATH + 'client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Powertool Menu Application"
-
 
 # Connect to Database and create database session
 engine = create_engine('sqlite:///powertool.db')
