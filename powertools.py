@@ -1,28 +1,23 @@
-from flask import Flask, render_template, request, redirect, jsonify, url_for
-from flask import flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, get
+from flask import make_response
+from flask import flash 
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from ptdatabase import Powertool, Base, PowertoolItem, User
-import random
-import string
+import random, string, httplib2, json, requests
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
-import httplib2
-import json
-from flask import make_response
-import requests
 from login_decorator import login_required
 from flask import session as login_session
 
 app = Flask(__name__)
 
-APP_PATH = '/var/www/catalog/catalog/'
 CLIENT_ID = json.loads(
-    open(APP_PATH + 'client_secrets.json', 'r').read())['web']['client_id']
+    open('/var/www/catalog/catalog/client_secrets.json', 'r').read())['web']['client_id']
 APPLICATION_NAME = "Powertool Menu Application"
 
 # Connect to Database and create database session
-engine = create_engine('sqlite:///powertool.db')
+engine = create_engine('postgresql://catalog:password@localhost/catalog')   
 Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
@@ -47,10 +42,10 @@ def fbconnect():
         return response
     access_token = request.data
     print "access token received %s " % access_token
-    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+    app_id = json.loads(open('/var/www/catalog/catalog/fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
-        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+        open('/var/www/catalog/catalog/fb_client_secrets.json', 'r').read())['web']['app_secret']
     url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (    # noqa
         app_id, app_secret, access_token)
     h = httplib2.Http()
@@ -134,7 +129,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('/var/www/catalog/catalog/client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -465,6 +460,7 @@ def disconnect():
             gdisconnect()
             del login_session['gplus_id']
             # del login_session['credentials']
+            #login_session['access_token']
         if login_session['provider'] == 'facebook':
             fbdisconnect()
             del login_session['facebook_id']
